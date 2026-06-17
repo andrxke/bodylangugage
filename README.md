@@ -145,6 +145,71 @@ angles = compute_pepper_angles(world_landmarks[frame_idx])
 # pepper_motion.setAngles(list(angles.keys()), list(angles.values()), 0.2)
 ```
 
+## Gesture Classification Training
+
+The pipeline includes a Spatial-Temporal Graph Convolutional Network (ST-GCN) model to classify gestures (e.g., facing the audience, arms crossed, or tense posture) directly from pose landmark sequences.
+
+### 1. Dataset Setup
+
+Prepare a training data directory (e.g., `data/`) with a subdirectory `clips/` containing raw videos, and a `labels.csv` manifest at the root:
+
+```text
+data/
+├── clips/
+│   ├── clip_001.mp4
+│   ├── clip_002.mp4
+│   └── ...
+└── labels.csv
+```
+
+The `labels.csv` file should contain the filenames of the clips and binary labels (`0` or `1`) for target gesture types (`facing`, `arms_crossed`, `tense`):
+
+```csv
+filename,facing,arms_crossed,tense
+clip_001.mp4,1,0,0
+clip_002.mp4,1,1,0
+clip_003.mp4,0,0,1
+```
+
+### 2. Extract Landmarks (Pre-processing)
+
+Extract pose landmarks from all video clips in the data directory and save them as compressed `.npz` files alongside the source videos. This decouples slow pose extraction from fast training:
+
+```bash
+python -m training.prepare_data --data-dir data/
+```
+
+* **Useful flags:**
+  * `--force`: Reprocess clips that already have `.npz` files.
+  * `--review`: Play back each clip with a skeleton overlay after extraction to verify accuracy.
+
+### 3. Train the Model
+
+Train the ST-GCN classifier for a specific gesture category (one of: `facing`, `arms_crossed`, or `tense`):
+
+```bash
+python -m training.train --data-dir data/ --gesture facing
+```
+
+* **Useful flags:**
+  * `--epochs 100`: Maximum training epochs (default: 100).
+  * `--batch-size 8`: Training batch size (default: 8).
+  * `--lr 0.001`: Initial learning rate (default: 0.001).
+  * `--patience 15`: Early stopping patience (default: 15).
+  * `--resume`: Resume training from the latest checkpoint.
+
+Trained model weights and training configs will be saved to `models/gesture_classifiers/`.
+
+### 4. Running Inference
+
+To run the live webcam capture pipeline with your trained gesture classification models enabled:
+
+```bash
+python main.py --source 0 --classify
+```
+
+---
+
 ## Project Structure
 
 ```
