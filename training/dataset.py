@@ -17,7 +17,7 @@ Data directory structure:
     └── labels.csv
 
 labels.csv format:
-    filename,facing,arms_crossed,tense
+    filename,facing,arms_crossed,arms_hidden
     clip_001.mp4,1,0,0
     clip_002.mp4,1,1,0
     clip_003.mp4,0,0,1
@@ -47,7 +47,7 @@ class GestureDataset(Dataset):
     Args:
         data_dir:     Root data directory (containing clips/ and labels.csv).
         gesture_type: Which gesture column to use as the label
-                      (e.g., "facing", "arms_crossed", "tense").
+                      (e.g., "facing", "arms_crossed", "arms_hidden").
         clip_length:  Fixed temporal dimension (default 128).
         augment:      Enable data augmentation for training.
     """

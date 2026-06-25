@@ -147,7 +147,7 @@ angles = compute_pepper_angles(world_landmarks[frame_idx])
 
 ## Gesture Classification Training
 
-The pipeline includes a Spatial-Temporal Graph Convolutional Network (ST-GCN) model to classify gestures (e.g., facing the audience, arms crossed, or tense posture) directly from pose landmark sequences.
+The pipeline includes a Spatial-Temporal Graph Convolutional Network (ST-GCN) model to classify gestures (e.g., facing the audience, arms crossed, or arms hidden) directly from pose landmark sequences.
 
 ### 1. Dataset Setup
 
@@ -162,10 +162,10 @@ data/
 └── labels.csv
 ```
 
-The `labels.csv` file should contain the filenames of the clips and binary labels (`0` or `1`) for target gesture types (`facing`, `arms_crossed`, `tense`):
+The `labels.csv` file should contain the filenames of the clips and binary labels (`0` or `1`) for target gesture types (`facing`, `arms_crossed`, `arms_hidden`):
 
 ```csv
-filename,facing,arms_crossed,tense
+filename,facing,arms_crossed,arms_hidden
 clip_001.mp4,1,0,0
 clip_002.mp4,1,1,0
 clip_003.mp4,0,0,1
@@ -185,7 +185,7 @@ python -m training.prepare_data --data-dir data/
 
 ### 3. Train the Model
 
-Train the ST-GCN classifier for a specific gesture category (one of: `facing`, `arms_crossed`, or `tense`):
+Train the ST-GCN classifier for a specific gesture category (one of: `facing`, `arms_crossed`, or `arms_hidden`):
 
 ```bash
 python -m training.train --data-dir data/ --gesture facing

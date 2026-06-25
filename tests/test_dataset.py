@@ -62,7 +62,7 @@ def _create_test_data(
     csv_path = data_dir / "labels.csv"
     with open(csv_path, "w", newline="") as f:
         writer = csv.writer(f)
-        writer.writerow(["filename", "facing", "arms_crossed", "tense"])
+        writer.writerow(["filename", "facing", "arms_crossed", "arms_hidden"])
         for i in range(num_clips):
             writer.writerow([f"clip_{i:03d}.mp4", labels[i], 0, 0])
 

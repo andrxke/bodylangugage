@@ -18,7 +18,6 @@ class GestureLabel(str, Enum):
     FACING_AUDIENCE = "facing_audience"
     NOT_FACING = "not_facing"
     ARMS_CROSSED = "arms_crossed"
-    TENSE_POSTURE = "tense_posture"
     NEUTRAL = "neutral"
     ARMS_HIDDEN = "arms_hidden"
 
@@ -39,13 +38,6 @@ GESTURE_TYPES: dict[str, dict] = {
         "positive_label": GestureLabel.ARMS_CROSSED,
         "negative_label": GestureLabel.NEUTRAL,
         "description": "Are the presenter's arms crossed?",
-        "num_classes": 2,
-    },
-    "tense": {
-        "csv_column": "tense",
-        "positive_label": GestureLabel.TENSE_POSTURE,
-        "negative_label": GestureLabel.NEUTRAL,
-        "description": "Is the presenter showing tense/closed posture?",
         "num_classes": 2,
     },
     "arms_hidden": {
