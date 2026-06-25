@@ -363,7 +363,18 @@ def main() -> None:
 
     # Resume from checkpoint if requested.
     start_epoch = 0
-    best_val_f1 = 0.0
+    best_val_f1 = -1.0
+    best_metrics = {
+        "loss": 0.0,
+        "accuracy": 0.0,
+        "precision": 0.0,
+        "recall": 0.0,
+        "f1": 0.0,
+        "tp": 0,
+        "fp": 0,
+        "tn": 0,
+        "fn": 0,
+    }
 
     model_path = output_dir / f"{gesture_type}.pt"
     checkpoint_path = output_dir / f"{gesture_type}_checkpoint.pt"

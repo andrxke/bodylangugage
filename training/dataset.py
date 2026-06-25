@@ -315,8 +315,9 @@ class GestureDataset(Dataset):
         counts = np.bincount(labels, minlength=2)
         total = len(labels)
 
-        # Inverse frequency weighting.
-        weights = total / (2.0 * counts.astype(np.float32))
+        # Inverse frequency weighting, preventing division by zero.
+        safe_counts = np.maximum(counts, 1)
+        weights = total / (2.0 * safe_counts.astype(np.float32))
 
         return torch.tensor(weights, dtype=torch.float32)
 

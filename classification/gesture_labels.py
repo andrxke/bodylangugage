@@ -20,6 +20,7 @@ class GestureLabel(str, Enum):
     ARMS_CROSSED = "arms_crossed"
     TENSE_POSTURE = "tense_posture"
     NEUTRAL = "neutral"
+    ARMS_HIDDEN = "arms_hidden"
 
 
 # Each gesture type is a binary classification task.
@@ -45,6 +46,13 @@ GESTURE_TYPES: dict[str, dict] = {
         "positive_label": GestureLabel.TENSE_POSTURE,
         "negative_label": GestureLabel.NEUTRAL,
         "description": "Is the presenter showing tense/closed posture?",
+        "num_classes": 2,
+    },
+    "arms_hidden": {
+        "csv_column": "arms_hidden",
+        "positive_label": GestureLabel.ARMS_HIDDEN,
+        "negative_label": GestureLabel.NEUTRAL,
+        "description": "Are the presenter's arms hidden?",
         "num_classes": 2,
     },
 }
