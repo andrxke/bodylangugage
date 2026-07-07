@@ -43,9 +43,14 @@ from classification.gesture_classifier import GestureClassifier
 from config import (
     CaptureConfig,
     ClassificationConfig,
+    PepperConfig,
     RecordingConfig,
     VisualizationConfig,
 )
+from feedback.aggregator import FeedbackAggregator
+from feedback.controller import PepperFeedbackController
+from feedback.motion import create_motion_driver
+from feedback.speech import create_speech_driver
 from models.landmark_data import FrameLandmarks
 from recording.session_recorder import SessionRecorder
 from visualization.skeleton_renderer import SkeletonRenderer
@@ -145,6 +150,32 @@ def parse_args() -> argparse.Namespace:
         help="Sliding window size in frames for classification. Default: 128.",
     )
 
+    # ---- Pepper feedback arguments ----
+    parser.add_argument(
+        "--pepper",
+        action="store_true",
+        help="Enable Pepper robot feedback after the session.",
+    )
+    parser.add_argument(
+        "--pepper-ip",
+        default="127.0.0.1",
+        help="Pepper robot IP address. Default: 127.0.0.1.",
+    )
+    parser.add_argument(
+        "--pepper-port",
+        type=int,
+        default=9559,
+        help="Pepper NAOqi port. Default: 9559.",
+    )
+    parser.add_argument(
+        "--no-pepper-simulate",
+        action="store_true",
+        help=(
+            "Connect to a real Pepper robot instead of simulating. "
+            "Requires the NAOqi SDK."
+        ),
+    )
+
     return parser.parse_args()
 
 
@@ -200,6 +231,13 @@ def main() -> None:
         window_size=args.window_size,
     )
 
+    pepper_config = PepperConfig(
+        enabled=args.pepper,
+        ip=args.pepper_ip,
+        port=args.pepper_port,
+        simulate=not args.no_pepper_simulate,
+    )
+
     # -----------------------------------------------------------------------
     # Initialize pipeline components.
     # -----------------------------------------------------------------------
@@ -247,6 +285,18 @@ def main() -> None:
     # Initialize visualization.
     renderer = SkeletonRenderer(vis_config) if vis_config.enabled else None
 
+    # Initialize feedback aggregator (always active when classifying +
+    # pepper is enabled, so we can build a report at session end).
+    aggregator = None
+    if pepper_config.enabled and classification_config.enabled:
+        aggregator = FeedbackAggregator()
+        logger.info("Pepper feedback enabled (simulate=%s).", pepper_config.simulate)
+    elif pepper_config.enabled and not classification_config.enabled:
+        logger.warning(
+            "Pepper feedback requires --classify. "
+            "Add --classify to enable gesture classification."
+        )
+
     # -----------------------------------------------------------------------
     # Main processing loop.
     # -----------------------------------------------------------------------
@@ -280,6 +330,10 @@ def main() -> None:
             gesture_results = None
             if classifier is not None and frame_data is not None:
                 gesture_results = classifier.update(frame_data)
+
+            # Feed the aggregator for Pepper feedback.
+            if aggregator is not None:
+                aggregator.update(gesture_results)
 
             # Record if active.
             if recorder.is_recording and frame_data is not None:
@@ -345,6 +399,42 @@ def main() -> None:
             elapsed,
             avg_fps,
         )
+
+        # ---------------------------------------------------------------
+        # Pepper feedback delivery (post-session).
+        # ---------------------------------------------------------------
+        if aggregator is not None:
+            report = aggregator.build_report()
+
+            if report.total_windows > 0:
+                logger.info("Delivering Pepper feedback...")
+                try:
+                    motion_driver = create_motion_driver(
+                        ip=pepper_config.ip,
+                        port=pepper_config.port,
+                        simulate=pepper_config.simulate,
+                    )
+                    speech_driver = create_speech_driver(
+                        ip=pepper_config.ip,
+                        port=pepper_config.port,
+                        simulate=pepper_config.simulate,
+                    )
+                    feedback_controller = PepperFeedbackController(
+                        motion_driver=motion_driver,
+                        speech_driver=speech_driver,
+                        pose_settle_time=pepper_config.pose_settle_time,
+                        speech_pause=pepper_config.speech_pause,
+                        motion_speed=pepper_config.motion_speed,
+                    )
+                    feedback_controller.deliver_feedback(report)
+                    feedback_controller.close()
+                except Exception:
+                    logger.exception("Pepper feedback delivery failed.")
+            else:
+                logger.info(
+                    "No classification data collected — "
+                    "skipping Pepper feedback."
+                )
 
 
 if __name__ == "__main__":

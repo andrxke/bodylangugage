@@ -111,6 +111,35 @@ class ClassificationConfig:
 
 
 # ---------------------------------------------------------------------------
+# Pepper robot feedback configuration
+# ---------------------------------------------------------------------------
+
+@dataclass
+class PepperConfig:
+    """Settings for Pepper robot feedback delivery."""
+
+    # Master toggle for Pepper feedback.
+    enabled: bool = False
+
+    # Pepper robot network address (NAOqi).
+    ip: str = "127.0.0.1"
+    port: int = 9559
+
+    # If True, use simulated drivers (console output) instead of
+    # connecting to a real Pepper robot. Safe for development/demos.
+    simulate: bool = True
+
+    # Seconds to hold each demonstration pose before speaking.
+    pose_settle_time: float = 2.0
+
+    # Seconds to pause after speech before transitioning to the next gesture.
+    speech_pause: float = 1.5
+
+    # Speed for joint movements [0.0, 1.0]. Lower = smoother.
+    motion_speed: float = 0.2
+
+
+# ---------------------------------------------------------------------------
 # Pepper robot joint configuration
 # ---------------------------------------------------------------------------
 
