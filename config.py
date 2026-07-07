@@ -125,6 +125,9 @@ class PepperConfig:
     ip: str = "127.0.0.1"
     port: int = 9559
 
+    # SSH password for the robot (default for Pepper/NAO is "nao").
+    ssh_password: str = "nao"
+
     # If True, use simulated drivers (console output) instead of
     # connecting to a real Pepper robot. Safe for development/demos.
     simulate: bool = True

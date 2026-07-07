@@ -28,6 +28,7 @@ from abc import ABC, abstractmethod
 from pathlib import Path
 
 from feedback.gestures import POSE_NEUTRAL
+from feedback.ssh_utils import DEFAULT_PEPPER_PASSWORD, ssh_base_args, ssh_env
 
 logger = logging.getLogger(__name__)
 
@@ -110,18 +111,20 @@ class PepperMotionDriver(MotionDriver):
         port: NAOqi port (default: 9559).
     """
 
-    def __init__(self, ip: str, port: int = 9559) -> None:
+    def __init__(self, ip: str, port: int = 9559, password: str = DEFAULT_PEPPER_PASSWORD) -> None:
         """Deploy the bridge script and start an SSH session to Pepper.
 
         Args:
-            ip:   Pepper robot IP address.
-            port: NAOqi port number.
+            ip:       Pepper robot IP address.
+            port:     NAOqi port number.
+            password: SSH password for the robot.
 
         Raises:
             ConnectionError: If unable to connect to the robot.
         """
         self._ip = ip
         self._port = port
+        self._password = password
         self._bridge_proc: subprocess.Popen | None = None
 
         self._start_bridge()
@@ -137,11 +140,7 @@ class PepperMotionDriver(MotionDriver):
 
         try:
             # Copy the bridge script to Pepper via SSH + cat.
-            deploy_cmd = [
-                "ssh",
-                "-o", "StrictHostKeyChecking=no",
-                "-o", "UserKnownHostsFile=/dev/null",
-                "-o", "LogLevel=ERROR",
+            deploy_cmd = ssh_base_args() + [
                 f"nao@{self._ip}",
                 "cat > /home/nao/pepper_bridge.py",
             ]
@@ -151,6 +150,7 @@ class PepperMotionDriver(MotionDriver):
                 capture_output=True,
                 text=True,
                 timeout=60.0,
+                env=ssh_env(self._password),
             )
 
             if deploy_result.returncode != 0:
@@ -169,11 +169,7 @@ class PepperMotionDriver(MotionDriver):
             raise ConnectionError("SSH client not found on this system.")
 
         # Start the bridge script on Pepper as a persistent process.
-        ssh_cmd = [
-            "ssh",
-            "-o", "StrictHostKeyChecking=no",
-            "-o", "UserKnownHostsFile=/dev/null",
-            "-o", "LogLevel=ERROR",
+        ssh_cmd = ssh_base_args() + [
             f"nao@{self._ip}",
             f"source /etc/profile; source ~/.profile; python /home/nao/pepper_bridge.py "
             f"--ip 127.0.0.1 --port {self._port}",
@@ -185,6 +181,7 @@ class PepperMotionDriver(MotionDriver):
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
             text=True,
+            env=ssh_env(self._password),
         )
 
         # Wait for the bridge to connect and respond.
@@ -320,6 +317,7 @@ def create_motion_driver(
     ip: str = "127.0.0.1",
     port: int = 9559,
     simulate: bool = True,
+    password: str = DEFAULT_PEPPER_PASSWORD,
 ) -> MotionDriver:
     """Factory function to create the appropriate motion driver.
 
@@ -327,6 +325,7 @@ def create_motion_driver(
         ip:       Pepper robot IP address (ignored if simulate=True).
         port:     NAOqi port (ignored if simulate=True).
         simulate: If True, return a simulated driver that logs to console.
+        password: SSH password for the robot.
 
     Returns:
         A MotionDriver instance.
@@ -336,4 +335,4 @@ def create_motion_driver(
         return SimulatedMotionDriver()
 
     logger.info("Connecting to Pepper motion at %s:%d ...", ip, port)
-    return PepperMotionDriver(ip, port)
+    return PepperMotionDriver(ip, port, password)

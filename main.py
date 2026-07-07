@@ -175,6 +175,11 @@ def parse_args() -> argparse.Namespace:
             "Requires the NAOqi SDK."
         ),
     )
+    parser.add_argument(
+        "--pepper-password",
+        default="nao",
+        help="SSH password for the Pepper robot. Default: nao.",
+    )
 
     return parser.parse_args()
 
@@ -235,6 +240,7 @@ def main() -> None:
         enabled=args.pepper,
         ip=args.pepper_ip,
         port=args.pepper_port,
+        ssh_password=args.pepper_password,
         simulate=not args.no_pepper_simulate,
     )
 
@@ -413,11 +419,13 @@ def main() -> None:
                         ip=pepper_config.ip,
                         port=pepper_config.port,
                         simulate=pepper_config.simulate,
+                        password=pepper_config.ssh_password,
                     )
                     speech_driver = create_speech_driver(
                         ip=pepper_config.ip,
                         port=pepper_config.port,
                         simulate=pepper_config.simulate,
+                        password=pepper_config.ssh_password,
                     )
                     feedback_controller = PepperFeedbackController(
                         motion_driver=motion_driver,

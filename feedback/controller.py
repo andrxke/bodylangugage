@@ -28,7 +28,12 @@ import logging
 import time
 
 from feedback.aggregator import FeedbackReport
-from feedback.gestures import GESTURE_POSES, POSE_NEUTRAL
+from feedback.gestures import (
+    GESTURE_POSES,
+    POSE_NEUTRAL,
+    POSE_NOT_FACING,
+    POSE_NOT_FACING_LEFT,
+)
 from feedback.motion import MotionDriver
 from feedback.speech import SpeechDriver
 
@@ -43,7 +48,8 @@ logger = logging.getLogger(__name__)
 _FEEDBACK_MESSAGES: dict[str, str] = {
     "not_facing": (
         "I noticed you didn't face the audience {count} "
-        "{times} during the presentation."
+        "{times} during the presentation. "
+        "Make sure you always face your audience when speaking."
     ),
     "arms_crossed": (
         "I noticed you crossed your arms {count} "
@@ -62,6 +68,10 @@ _CONGRATULATIONS_MESSAGE = (
 
 _INTRO_MESSAGE = (
     "Let me show you some body language I noticed during your presentation."
+)
+
+_GOODBYE_MESSAGE = (
+    "Good job on your presentation! Hope my feedback was helpful!"
 )
 
 
@@ -131,17 +141,20 @@ class PepperFeedbackController:
             self._speech.say(_CONGRATULATIONS_MESSAGE)
             return
 
-        # Introduction.
+        # Introduction
         self._speech.say(_INTRO_MESSAGE)
         time.sleep(self.speech_pause)
 
-        # Demonstrate each issue (sorted by count, most frequent first).
+        # Demonstrate each issue (sorted by count, most frequent first)
         for gesture_key, count in report.issues:
             self._demonstrate_gesture(gesture_key, count)
 
-        # Return to neutral at the end.
+        # Return to neutral at the end
         self._motion.go_neutral(self.motion_speed)
 
+        # Goodbye message
+        self._speech.say(_GOODBYE_MESSAGE)
+        
         logger.info("Pepper feedback delivery complete.")
 
     def _demonstrate_gesture(self, gesture_key: str, count: int) -> None:
@@ -154,6 +167,11 @@ class PepperFeedbackController:
         logger.info(
             "Demonstrating gesture '%s' (count=%d)", gesture_key, count,
         )
+
+        # Not-facing gets a special multi-example demonstration.
+        if gesture_key == "not_facing":
+            self._demonstrate_not_facing(count)
+            return
 
         # 1. Move into the demonstration pose.
         pose = GESTURE_POSES.get(gesture_key)
@@ -183,6 +201,48 @@ class PepperFeedbackController:
 
         # 3. Return to neutral before the next demonstration.
         self._motion.go_neutral(self.motion_speed)
+        time.sleep(1.0)  # Brief pause between demonstrations.
+
+    def _demonstrate_not_facing(self, count: int) -> None:
+        """Special demonstration for not-facing: show examples then explain.
+
+        Pepper turns away from the person (right, then left) while speaking
+        to illustrate what "not facing the audience" looks like, then turns
+        back to face the person before delivering the full feedback message.
+
+        Args:
+            count: Number of times not-facing was detected.
+        """
+        logger.info("Demonstrating not_facing with multiple examples.")
+
+        # Example 1 — look to the right.
+        self._speech.say("Sometimes during your presentation, you looked away like this.")
+        self._motion.set_pose(POSE_NOT_FACING, self.motion_speed)
+        time.sleep(self.pose_settle_time)
+
+        # Turn back to face the person.
+        self._motion.go_neutral(self.motion_speed)
+        time.sleep(1.0)
+
+        # Example 2 — look to the left.
+        self._speech.say("Or like this.")
+        self._motion.set_pose(POSE_NOT_FACING_LEFT, self.motion_speed)
+        time.sleep(self.pose_settle_time)
+
+        # Turn back to face the person.
+        self._motion.go_neutral(self.motion_speed)
+        time.sleep(1.0)
+
+        # Now deliver the actual feedback while facing the person.
+        message_template = _FEEDBACK_MESSAGES.get("not_facing")
+        if message_template is not None:
+            message = message_template.format(
+                count=count,
+                times=_pluralize_times(count),
+            )
+            self._speech.say(message)
+
+        time.sleep(self.speech_pause)
         time.sleep(1.0)  # Brief pause between demonstrations.
 
     def close(self) -> None:

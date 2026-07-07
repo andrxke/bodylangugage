@@ -39,8 +39,6 @@ def _clamp_pose(pose: dict[str, float]) -> dict[str, float]:
 # ---------------------------------------------------------------------------
 
 POSE_NEUTRAL: dict[str, float] = _clamp_pose({
-    "HeadYaw":        0.0,
-    "HeadPitch":      0.0,
     "LShoulderPitch": 1.4,    # Arms relaxed at sides.
     "LShoulderRoll":  0.15,
     "LElbowYaw":      -1.2,
@@ -73,6 +71,22 @@ POSE_NOT_FACING: dict[str, float] = _clamp_pose({
     "RWristYaw":      0.0,
 })
 
+# Not facing — turned to the opposite side (left).
+POSE_NOT_FACING_LEFT: dict[str, float] = _clamp_pose({
+    "HeadYaw":        -1.0,   # Head turned ~60° to the left.
+    "HeadPitch":      0.1,    # Slightly looking down.
+    "LShoulderPitch": 1.4,
+    "LShoulderRoll":  0.15,
+    "LElbowYaw":      -1.2,
+    "LElbowRoll":     -0.5,
+    "LWristYaw":      0.0,
+    "RShoulderPitch": 1.4,
+    "RShoulderRoll":  -0.15,
+    "RElbowYaw":      1.2,
+    "RElbowRoll":     0.5,
+    "RWristYaw":      0.0,
+})
+
 
 # ---------------------------------------------------------------------------
 # Arms crossed — both arms folded across the chest.
@@ -81,14 +95,14 @@ POSE_NOT_FACING: dict[str, float] = _clamp_pose({
 POSE_ARMS_CROSSED: dict[str, float] = _clamp_pose({
     "HeadYaw":        0.0,
     "HeadPitch":      0.1,
-    # Left arm: shoulder forward, elbow bent sharply inward.
-    "LShoulderPitch": 0.4,    # Arm pitched forward.
+    # Left arm: shoulder forward and slightly higher (on top).
+    "LShoulderPitch": 0.2,    # Arm pitched forward and up.
     "LShoulderRoll":  0.05,   # Arm close to body.
     "LElbowYaw":      -0.3,   # Forearm angled across chest.
     "LElbowRoll":     -1.4,   # Elbow bent tightly.
     "LWristYaw":      0.5,
-    # Right arm: mirrors left, crossing over.
-    "RShoulderPitch": 0.4,
+    # Right arm: mirrors left, but lower (underneath).
+    "RShoulderPitch": 0.5,    # Arm pitched further down.
     "RShoulderRoll":  -0.05,
     "RElbowYaw":      0.3,
     "RElbowRoll":     1.4,
